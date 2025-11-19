@@ -214,5 +214,9 @@ footer a:focus {
   }
   footer p { font-size: 0.9rem; }
   footer a { padding: 6px 8px; font-size: 0.95rem; }
+  
+  body.fonte-grande {
+  font-size: 2rem;
+}
 }
 
