@@ -6,7 +6,7 @@ function falarTexto() {
   speechSynthesis.speak(fala);
 }
 
-/* ===== RECONHECIMENTO DE VOZ ===== */
+/* ===== RECONHECIMENTO PARA ÁREA DE TRADUÇÃO ===== */
 function iniciarReconhecimento() {
   const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
   rec.lang = "pt-BR";
@@ -14,6 +14,19 @@ function iniciarReconhecimento() {
   rec.onresult = (event) => {
     const texto = event.results[0][0].transcript;
     document.getElementById("textoParaTraduzir").value = texto;
+  };
+
+  rec.start();
+}
+
+/* ===== RECONHECIMENTO PARA DEPOIMENTO (CORRIGIDO) ===== */
+function reconhecerDepoimento() {
+  const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  rec.lang = "pt-BR";
+
+  rec.onresult = (event) => {
+    const texto = event.results[0][0].transcript;
+    document.getElementById("inputDepoimento").value = texto;
   };
 
   rec.start();
@@ -30,7 +43,6 @@ function traduzirTexto() {
   }
 
   painel.textContent = texto;
-
   painel.dispatchEvent(new Event("DOMSubtreeModified", { bubbles: true }));
 }
 

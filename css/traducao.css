@@ -140,6 +140,11 @@ button:hover {
   align-items: center; /* centraliza tudo dentro da coluna */
 }
 
+.audioemtexto {
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
 .depoimentos-card textarea,
 .depoimentos-card input,
 .depoimentos-card button {
@@ -214,7 +219,7 @@ footer a:focus {
   }
   footer p { font-size: 0.9rem; }
   footer a { padding: 6px 8px; font-size: 0.95rem; }
-  
+
   body.fonte-grande {
   font-size: 2rem;
 }
