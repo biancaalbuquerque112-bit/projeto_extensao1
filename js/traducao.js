@@ -19,7 +19,7 @@ function iniciarReconhecimento() {
   rec.start();
 }
 
-/* ===== RECONHECIMENTO PARA DEPOIMENTO ===== */
+/* ===== RECONHECIMENTO PARA DEPOIMENTO (CORRIGIDO) ===== */
 function reconhecerDepoimento() {
   const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
   rec.lang = "pt-BR";
@@ -52,87 +52,66 @@ function alternarAcessibilidade() {
 }
 
 /* ============================================================
-   FIREBASE — DEPOIMENTOS COM NOME + TEXTO + DATA
+   DEPOIMENTOS — SALVANDO NOME + TEXTO + DATA
    ============================================================ */
 
-import {
-  collection,
-  addDoc,
-  getDocs,
-  serverTimestamp,
-  query,
-  orderBy
-} from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+function carregarDepoimentos() {
+  const lista = document.getElementById("listaDepoimentos");
+  lista.innerHTML = "";
 
-/* ===== SALVAR NO FIRESTORE ===== */
-async function salvarDepoimentoFirestore(nome, texto) {
-  const depoimentosRef = collection(window.db, "depoimentos");
+  const dados = JSON.parse(localStorage.getItem("depoimentos_acessolivre") || "[]");
 
-  await addDoc(depoimentosRef, {
-    nome: nome,
-    texto: texto,
-    data: serverTimestamp()
+  dados.reverse().forEach(dep => {
+    const p = document.createElement("p");
+    p.textContent = `${dep.nome} — ${dep.data}\n${dep.texto}`;
+    p.style.whiteSpace = "pre-line";
+    lista.appendChild(p);
   });
 }
 
-/* ===== CARREGAR DO FIRESTORE ===== */
-async function carregarDepoimentos() {
-  const lista = document.getElementById("listaDepoimentos");
-  lista.innerHTML = "Carregando...";
+function salvarDepoimento(nome, texto) {
+  const dados = JSON.parse(localStorage.getItem("depoimentos_acessolivre") || "[]");
 
-  const depoimentosRef = collection(window.db, "depoimentos");
-  const q = query(depoimentosRef, orderBy("data", "desc"));
+  const agora = new Date();
+  const data = agora.toLocaleDateString("pt-BR") +
+               " · " +
+               agora.toLocaleTimeString("pt-BR", {
+                 hour: "2-digit",
+                 minute: "2-digit"
+               });
 
-  const snapshot = await getDocs(q);
+  dados.push({ nome, texto, data });
 
-  lista.innerHTML = "";
-
-  snapshot.forEach(doc => {
-    const dep = doc.data();
-
-    const bloco = document.createElement("div");
-    bloco.classList.add("depoimento-card");
-
-    const data = dep.data?.toDate
-      ? dep.data.toDate().toLocaleString("pt-BR")
-      : "Data não disponível";
-
-    bloco.innerHTML = `
-      <strong>${dep.nome}</strong> — <small>${data}</small><br>
-      <p>${dep.texto}</p>
-      <hr>
-    `;
-
-    lista.appendChild(bloco);
-  });
-};
+  localStorage.setItem("depoimentos_acessolivre", JSON.stringify(dados));
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("formDepoimento");
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  if (form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
 
-    const nome = document.getElementById("nomeDepoimento").value.trim();
-    const texto = document.getElementById("inputDepoimento").value.trim();
+      const nome = document.getElementById("nomeDepoimento").value.trim();
+      const texto = document.getElementById("inputDepoimento").value.trim();
 
-    if (nome.length < 2) {
-      alert("Digite um nome válido!");
-      return;
-    }
+      if (nome.length < 2) {
+        alert("Digite um nome válido!");
+        return;
+      }
 
-    if (texto.length < 8) {
-      alert("Depoimento muito curto!");
-      return;
-    }
+      if (texto.length < 8) {
+        alert("Depoimento muito curto!");
+        return;
+      }
 
-    await salvarDepoimentoFirestore(nome, texto);
+      salvarDepoimento(nome, texto);
+      carregarDepoimentos();
 
-    document.getElementById("nomeDepoimento").value = "";
-    document.getElementById("inputDepoimento").value = "";
-
-    carregarDepoimentos();
-  });
+      document.getElementById("inputDepoimento").value = "";
+      document.getElementById("nomeDepoimento").value = "";
+    });
+  }
 
   carregarDepoimentos();
 });
