@@ -19,7 +19,7 @@ function iniciarReconhecimento() {
   rec.start();
 }
 
-/* ===== RECONHECIMENTO PARA DEPOIMENTO (CORRIGIDO) ===== */
+/* ===== RECONHECIMENTO PARA DEPOIMENTO ===== */
 function reconhecerDepoimento() {
   const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
   rec.lang = "pt-BR";
@@ -52,66 +52,87 @@ function alternarAcessibilidade() {
 }
 
 /* ============================================================
-   DEPOIMENTOS — SALVANDO NOME + TEXTO + DATA
+   FIREBASE — DEPOIMENTOS COM NOME + TEXTO + DATA
    ============================================================ */
 
-function carregarDepoimentos() {
-  const lista = document.getElementById("listaDepoimentos");
-  lista.innerHTML = "";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  serverTimestamp,
+  query,
+  orderBy
+} from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
-  const dados = JSON.parse(localStorage.getItem("depoimentos_acessolivre") || "[]");
+/* ===== SALVAR NO FIRESTORE ===== */
+async function salvarDepoimentoFirestore(nome, texto) {
+  const depoimentosRef = collection(window.db, "depoimentos");
 
-  dados.reverse().forEach(dep => {
-    const p = document.createElement("p");
-    p.textContent = `${dep.nome} — ${dep.data}\n${dep.texto}`;
-    p.style.whiteSpace = "pre-line";
-    lista.appendChild(p);
+  await addDoc(depoimentosRef, {
+    nome: nome,
+    texto: texto,
+    data: serverTimestamp()
   });
 }
 
-function salvarDepoimento(nome, texto) {
-  const dados = JSON.parse(localStorage.getItem("depoimentos_acessolivre") || "[]");
+/* ===== CARREGAR DO FIRESTORE ===== */
+async function carregarDepoimentos() {
+  const lista = document.getElementById("listaDepoimentos");
+  lista.innerHTML = "Carregando...";
 
-  const agora = new Date();
-  const data = agora.toLocaleDateString("pt-BR") +
-               " · " +
-               agora.toLocaleTimeString("pt-BR", {
-                 hour: "2-digit",
-                 minute: "2-digit"
-               });
+  const depoimentosRef = collection(window.db, "depoimentos");
+  const q = query(depoimentosRef, orderBy("data", "desc"));
 
-  dados.push({ nome, texto, data });
+  const snapshot = await getDocs(q);
 
-  localStorage.setItem("depoimentos_acessolivre", JSON.stringify(dados));
+  lista.innerHTML = "";
+
+  snapshot.forEach(doc => {
+    const dep = doc.data();
+
+    const bloco = document.createElement("div");
+    bloco.classList.add("depoimento-card");
+
+    const data = dep.data?.toDate
+      ? dep.data.toDate().toLocaleString("pt-BR")
+      : "Data não disponível";
+
+    bloco.innerHTML = `
+      <strong>${dep.nome}</strong> — <small>${data}</small><br>
+      <p>${dep.texto}</p>
+      <hr>
+    `;
+
+    lista.appendChild(bloco);
+  });
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("formDepoimento");
 
-  if (form) {
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-      const nome = document.getElementById("nomeDepoimento").value.trim();
-      const texto = document.getElementById("inputDepoimento").value.trim();
+    const nome = document.getElementById("nomeDepoimento").value.trim();
+    const texto = document.getElementById("inputDepoimento").value.trim();
 
-      if (nome.length < 2) {
-        alert("Digite um nome válido!");
-        return;
-      }
+    if (nome.length < 2) {
+      alert("Digite um nome válido!");
+      return;
+    }
 
-      if (texto.length < 8) {
-        alert("Depoimento muito curto!");
-        return;
-      }
+    if (texto.length < 8) {
+      alert("Depoimento muito curto!");
+      return;
+    }
 
-      salvarDepoimento(nome, texto);
-      carregarDepoimentos();
+    await salvarDepoimentoFirestore(nome, texto);
 
-      document.getElementById("inputDepoimento").value = "";
-      document.getElementById("nomeDepoimento").value = "";
-    });
-  }
+    document.getElementById("nomeDepoimento").value = "";
+    document.getElementById("inputDepoimento").value = "";
+
+    carregarDepoimentos();
+  });
 
   carregarDepoimentos();
 });
