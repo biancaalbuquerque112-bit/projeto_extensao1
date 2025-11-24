@@ -105,7 +105,7 @@ async function carregarDepoimentos() {
 
     lista.appendChild(bloco);
   });
-}
+};
 
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("formDepoimento");
